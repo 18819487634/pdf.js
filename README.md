@@ -1,3 +1,6 @@
+## fork自pdfjs
+增加保存批注数据，外部传入批注数据回显
+
 # PDF.js [![Build Status](https://github.com/mozilla/pdf.js/workflows/CI/badge.svg?branch=master)](https://github.com/mozilla/pdf.js/actions?query=workflow%3ACI+branch%3Amaster)
 
 [PDF.js](https://mozilla.github.io/pdf.js/) is a Portable Document Format (PDF) viewer that is built with HTML5.
@@ -138,3 +141,9 @@ Talk to us on Matrix:
 File an issue:
 
 + https://github.com/mozilla/pdf.js/issues/new/choose
+
+## build
+gulp generic
+
+## core-js install慢
+npm i core-js@3

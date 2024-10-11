@@ -20,6 +20,56 @@
 /** @typedef {import("../src/display/api.js").PDFDocumentLoadingTask} PDFDocumentLoadingTask */
 
 import {
+  AnnotationEditorType,
+  build,
+  FeatureTest,
+  getDocument,
+  getFilenameFromUrl,
+  getPdfFilenameFromUrl,
+  GlobalWorkerOptions,
+  InvalidPDFException,
+  isDataScheme,
+  isPdfFile,
+  MissingPDFException,
+  PDFWorker,
+  shadow,
+  UnexpectedResponseException,
+  version,
+} from "pdfjs-lib";
+import { AltTextManager } from "web-alt_text_manager";
+import { AnnotationEditorParams } from "web-annotation_editor_params";
+import { DownloadManager } from "web-download_manager";
+import { ExternalServices, initCom, MLManager } from "web-external_services";
+import {
+  ImageAltTextSettings,
+  NewAltTextManager,
+} from "web-new_alt_text_manager";
+import { PDFAttachmentViewer } from "web-pdf_attachment_viewer";
+import { PDFCursorTools } from "web-pdf_cursor_tools";
+import { PDFDocumentProperties } from "web-pdf_document_properties";
+import { PDFFindBar } from "web-pdf_find_bar";
+import { PDFLayerViewer } from "web-pdf_layer_viewer";
+import { PDFOutlineViewer } from "web-pdf_outline_viewer";
+import { PDFPresentationMode } from "web-pdf_presentation_mode";
+import { PDFSidebar } from "web-pdf_sidebar";
+import { PDFThumbnailViewer } from "web-pdf_thumbnail_viewer";
+import { Preferences } from "web-preferences";
+import { PDFPrintServiceFactory } from "web-print_service";
+import { SecondaryToolbar } from "web-secondary_toolbar";
+import { Toolbar } from "web-toolbar";
+import { AppOptions, OptionKind } from "./app_options.js";
+import { CaretBrowsingMode } from "./caret_browsing.js";
+import { initCustom } from "./custom.js";
+import { EventBus, FirefoxEventBus } from "./event_utils.js";
+import { OverlayManager } from "./overlay_manager.js";
+import { PasswordPrompt } from "./password_prompt.js";
+import { PDFFindController } from "./pdf_find_controller.js";
+import { PDFHistory } from "./pdf_history.js";
+import { LinkTarget, PDFLinkService } from "./pdf_link_service.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PDFScriptingManager } from "./pdf_scripting_manager.js";
+import { PDFViewer } from "./pdf_viewer.js";
+import {
   animationStarted,
   apiPageLayoutToViewerModes,
   apiPageModeToSidebarView,
@@ -39,55 +89,6 @@ import {
   SpreadMode,
   TextLayerMode,
 } from "./ui_utils.js";
-import {
-  AnnotationEditorType,
-  build,
-  FeatureTest,
-  getDocument,
-  getFilenameFromUrl,
-  getPdfFilenameFromUrl,
-  GlobalWorkerOptions,
-  InvalidPDFException,
-  isDataScheme,
-  isPdfFile,
-  MissingPDFException,
-  PDFWorker,
-  shadow,
-  UnexpectedResponseException,
-  version,
-} from "pdfjs-lib";
-import { AppOptions, OptionKind } from "./app_options.js";
-import { EventBus, FirefoxEventBus } from "./event_utils.js";
-import { ExternalServices, initCom, MLManager } from "web-external_services";
-import {
-  ImageAltTextSettings,
-  NewAltTextManager,
-} from "web-new_alt_text_manager";
-import { LinkTarget, PDFLinkService } from "./pdf_link_service.js";
-import { AltTextManager } from "web-alt_text_manager";
-import { AnnotationEditorParams } from "web-annotation_editor_params";
-import { CaretBrowsingMode } from "./caret_browsing.js";
-import { DownloadManager } from "web-download_manager";
-import { OverlayManager } from "./overlay_manager.js";
-import { PasswordPrompt } from "./password_prompt.js";
-import { PDFAttachmentViewer } from "web-pdf_attachment_viewer";
-import { PDFCursorTools } from "web-pdf_cursor_tools";
-import { PDFDocumentProperties } from "web-pdf_document_properties";
-import { PDFFindBar } from "web-pdf_find_bar";
-import { PDFFindController } from "./pdf_find_controller.js";
-import { PDFHistory } from "./pdf_history.js";
-import { PDFLayerViewer } from "web-pdf_layer_viewer";
-import { PDFOutlineViewer } from "web-pdf_outline_viewer";
-import { PDFPresentationMode } from "web-pdf_presentation_mode";
-import { PDFPrintServiceFactory } from "web-print_service";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { PDFSidebar } from "web-pdf_sidebar";
-import { PDFThumbnailViewer } from "web-pdf_thumbnail_viewer";
-import { PDFViewer } from "./pdf_viewer.js";
-import { Preferences } from "web-preferences";
-import { SecondaryToolbar } from "web-secondary_toolbar";
-import { Toolbar } from "web-toolbar";
 import { ViewHistory } from "./view_history.js";
 
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
@@ -385,6 +386,8 @@ const PDFViewerApplication = {
           )
         : new EventBus();
     this.eventBus = AppOptions.eventBus = eventBus;
+
+    initCustom();
     this.mlManager?.setEventBus(eventBus, this._globalAbortController.signal);
 
     this.overlayManager = new OverlayManager();
@@ -678,60 +681,60 @@ const PDFViewerApplication = {
     await this.initialize(config);
 
     const { appConfig, eventBus } = this;
-    let file;
-    if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
-      const queryString = document.location.search.substring(1);
-      const params = parseQueryString(queryString);
-      file = params.get("file") ?? AppOptions.get("defaultUrl");
-      validateFileURL(file);
-    } else if (PDFJSDev.test("MOZCENTRAL")) {
-      file = window.location.href;
-    } else if (PDFJSDev.test("CHROME")) {
-      file = AppOptions.get("defaultUrl");
-    }
+    // let file;
+    // if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
+    //   const queryString = document.location.search.substring(1);
+    //   const params = parseQueryString(queryString);
+    //   file = params.get("file") ?? AppOptions.get("defaultUrl");
+    //   validateFileURL(file);
+    // } else if (PDFJSDev.test("MOZCENTRAL")) {
+    //   file = window.location.href;
+    // } else if (PDFJSDev.test("CHROME")) {
+    //   file = AppOptions.get("defaultUrl");
+    // }
 
     if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
-      const fileInput = (this._openFileInput = document.createElement("input"));
-      fileInput.id = "fileInput";
-      fileInput.hidden = true;
-      fileInput.type = "file";
-      fileInput.value = null;
-      document.body.append(fileInput);
-
-      fileInput.addEventListener("change", function (evt) {
-        const { files } = evt.target;
-        if (!files || files.length === 0) {
-          return;
-        }
-        eventBus.dispatch("fileinputchange", {
-          source: this,
-          fileInput: evt.target,
-        });
-      });
-
+      // eslint-disable-next-line max-len
+      // const fileInput = (this._openFileInput = document.createElement("input"));
+      // fileInput.id = "fileInput";
+      // fileInput.hidden = true;
+      // fileInput.type = "file";
+      // fileInput.value = null;
+      // document.body.append(fileInput);
+      // fileInput.addEventListener("change", function (evt) {
+      //   const { files } = evt.target;
+      //   if (!files || files.length === 0) {
+      //     return;
+      //   }
+      //   eventBus.dispatch("fileinputchange", {
+      //     source: this,
+      //     fileInput: evt.target,
+      //   });
+      // });
       // Enable dragging-and-dropping a new PDF file onto the viewerContainer.
-      appConfig.mainContainer.addEventListener("dragover", function (evt) {
-        for (const item of evt.dataTransfer.items) {
-          if (item.type === "application/pdf") {
-            evt.dataTransfer.dropEffect =
-              evt.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
-            evt.preventDefault();
-            evt.stopPropagation();
-            return;
-          }
-        }
-      });
-      appConfig.mainContainer.addEventListener("drop", function (evt) {
-        if (evt.dataTransfer.files?.[0].type !== "application/pdf") {
-          return;
-        }
-        evt.preventDefault();
-        evt.stopPropagation();
-        eventBus.dispatch("fileinputchange", {
-          source: this,
-          fileInput: evt.dataTransfer,
-        });
-      });
+      // appConfig.mainContainer.addEventListener("dragover", function (evt) {
+      //   for (const item of evt.dataTransfer.items) {
+      //     if (item.type === "application/pdf") {
+      //       evt.dataTransfer.dropEffect =
+      //         evt.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
+      //       evt.preventDefault();
+      //       evt.stopPropagation();
+      //       return;
+      //     }
+      //   }
+      // });
+      // 关闭拖拽预览新pdf文件
+      // appConfig.mainContainer.addEventListener("drop", function (evt) {
+      //   if (evt.dataTransfer.files?.[0].type !== "application/pdf") {
+      //     return;
+      //   }
+      //   evt.preventDefault();
+      //   evt.stopPropagation();
+      //   eventBus.dispatch("fileinputchange", {
+      //     source: this,
+      //     fileInput: evt.dataTransfer,
+      //   });
+      // });
     }
 
     if (!AppOptions.get("supportsDocumentFonts")) {
@@ -757,18 +760,25 @@ const PDFViewerApplication = {
     }
 
     if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
-      if (file) {
-        this.open({ url: file });
+      this.handleLoading(true);
+      const data = await window.loadData();
+      if (data) {
+        this.open({ data });
       } else {
         this._hideViewBookmark();
       }
     } else if (PDFJSDev.test("MOZCENTRAL || CHROME")) {
-      this.setTitleUsingUrl(file, /* downloadUrl = */ file);
+      // this.setTitleUsingUrl(file, /* downloadUrl = */ file);
 
       this.externalServices.initPassiveLoading();
     } else {
       throw new Error("Not implemented: run");
     }
+  },
+
+  handleLoading(show) {
+    const loading = document.querySelector(".loading-main");
+    loading.style.display = show ? "flex" : "none";
   },
 
   get externalServices() {
@@ -1541,11 +1551,6 @@ const PDFViewerApplication = {
     this._contentLength ??= contentLength; // See `getDownloadInfo`-call above.
 
     // Provides some basic debug information
-    console.log(
-      `PDF ${pdfDocument.fingerprints[0]} [${info.PDFFormatVersion} ` +
-        `${(info.Producer || "-").trim()} / ${(info.Creator || "-").trim()}] ` +
-        `(PDF.js: ${version || "?"} [${build || "?"}])`
-    );
     let pdfTitle = info.Title;
 
     const metadataTitle = metadata?.get("dc:title");
@@ -1687,14 +1692,14 @@ const PDFViewerApplication = {
     const { annotationStorage } = pdfDocument;
 
     annotationStorage.onSetModified = () => {
-      window.addEventListener("beforeunload", beforeUnload);
+      // window.addEventListener("beforeunload", beforeUnload);
 
       if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
         this._annotationStorageModified = true;
       }
     };
     annotationStorage.onResetModified = () => {
-      window.removeEventListener("beforeunload", beforeUnload);
+      // window.removeEventListener("beforeunload", beforeUnload);
 
       if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
         delete this._annotationStorageModified;

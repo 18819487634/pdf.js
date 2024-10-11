@@ -16,16 +16,16 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
 
+import { FeatureTest, shadow, unreachable } from "../../shared/util.js";
+import { noContextMenu } from "../display_utils.js";
+import { AltText } from "./alt_text.js";
+import { EditorToolbar } from "./toolbar.js";
 import {
   AnnotationEditorUIManager,
   bindEvents,
   ColorManager,
   KeyboardManager,
 } from "./tools.js";
-import { FeatureTest, shadow, unreachable } from "../../shared/util.js";
-import { AltText } from "./alt_text.js";
-import { EditorToolbar } from "./toolbar.js";
-import { noContextMenu } from "../display_utils.js";
 
 /**
  * @typedef {Object} AnnotationEditorParameters
@@ -180,6 +180,11 @@ class AnnotationEditor {
 
     this.isAttachedToDOM = false;
     this.deleted = false;
+  }
+
+  hasPermitToEdit() {
+    const globalPermit = window.PDFViewerApplication.permitToEdit;
+    return globalPermit && this.permitToEdit;
   }
 
   get editorType() {
@@ -783,6 +788,8 @@ class AnnotationEditor {
       this.div.style.cursor = savedCursor;
 
       this.#addResizeToUndoStack(savedX, savedY, savedWidth, savedHeight);
+
+      this._uiManager.hook.postModifyConfirm(this);
     };
     window.addEventListener("pointerup", pointerUpCallback, { signal });
     // If the user switches to another window (with alt+tab), then we end the
@@ -1109,10 +1116,6 @@ class AnnotationEditor {
     this.#selectOnPointerEvent(event);
   }
 
-  get isSelected() {
-    return this._uiManager.isSelected(this);
-  }
-
   #selectOnPointerEvent(event) {
     const { isMac } = FeatureTest.platform;
     if (
@@ -1127,7 +1130,7 @@ class AnnotationEditor {
   }
 
   #setUpDragSession(event) {
-    const { isSelected } = this;
+    const isSelected = this._uiManager.isSelected(this);
     this._uiManager.setUpDragSession();
 
     const ac = new AbortController();
@@ -1190,6 +1193,7 @@ class AnnotationEditor {
     this.x = x;
     this.y = y;
     this.fixAndSetPosition();
+    this._uiManager.hook.postModifyConfirm(this);
   }
 
   /**
@@ -1436,6 +1440,7 @@ class AnnotationEditor {
     }
     this.#stopResizing();
     this.removeEditToolbar();
+    this._uiManager.hook.postDestroy(this);
     if (this.#telemetryTimeouts) {
       for (const timeout of this.#telemetryTimeouts.values()) {
         clearTimeout(timeout);

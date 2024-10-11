@@ -101,22 +101,22 @@ class Toolbar {
           },
         },
       },
-      {
-        element: options.editorStampButton,
-        eventName: "switchannotationeditormode",
-        eventDetails: {
-          get mode() {
-            const { classList } = options.editorStampButton;
-            return classList.contains("toggled")
-              ? AnnotationEditorType.NONE
-              : AnnotationEditorType.STAMP;
-          },
-        },
-        telemetry: {
-          type: "editing",
-          data: { action: "pdfjs.image.icon_click" },
-        },
-      },
+      // {
+      //   element: options.editorStampButton,
+      //   eventName: "switchannotationeditormode",
+      //   eventDetails: {
+      //     get mode() {
+      //       const { classList } = options.editorStampButton;
+      //       return classList.contains("toggled")
+      //         ? AnnotationEditorType.NONE
+      //         : AnnotationEditorType.STAMP;
+      //     },
+      //   },
+      //   telemetry: {
+      //     type: "editing",
+      //     data: { action: "pdfjs.image.icon_click" },
+      //   },
+      // },
     ];
 
     // Bind the event listeners for click and various other actions.
@@ -277,8 +277,8 @@ class Toolbar {
       editorHighlightParamsToolbar,
       editorInkButton,
       editorInkParamsToolbar,
-      editorStampButton,
-      editorStampParamsToolbar,
+      // editorStampButton,
+      // editorStampParamsToolbar,
     } = this.#opts;
 
     toggleExpandedBtn(
@@ -296,17 +296,17 @@ class Toolbar {
       mode === AnnotationEditorType.INK,
       editorInkParamsToolbar
     );
-    toggleExpandedBtn(
-      editorStampButton,
-      mode === AnnotationEditorType.STAMP,
-      editorStampParamsToolbar
-    );
+    // toggleExpandedBtn(
+    //   editorStampButton,
+    //   mode === AnnotationEditorType.STAMP,
+    //   editorStampParamsToolbar
+    // );
 
     const isDisable = mode === AnnotationEditorType.DISABLE;
     editorFreeTextButton.disabled = isDisable;
     editorHighlightButton.disabled = isDisable;
     editorInkButton.disabled = isDisable;
-    editorStampButton.disabled = isDisable;
+    // editorStampButton.disabled = isDisable;
   }
 
   #updateUIState(resetNumPages = false) {

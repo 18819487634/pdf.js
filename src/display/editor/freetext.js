@@ -24,13 +24,13 @@ import {
   shadow,
   Util,
 } from "../../shared/util.js";
+import { FreeTextAnnotationElement } from "../annotation_layer.js";
+import { AnnotationEditor } from "./editor.js";
 import {
   AnnotationEditorUIManager,
   bindEvents,
   KeyboardManager,
 } from "./tools.js";
-import { AnnotationEditor } from "./editor.js";
-import { FreeTextAnnotationElement } from "../annotation_layer.js";
 
 const EOL_PATTERN = /\r\n?|\n/g;
 
@@ -130,6 +130,19 @@ class FreeTextEditor extends AnnotationEditor {
 
   constructor(params) {
     super({ ...params, name: "freeTextEditor" });
+    if (params.fromCommand) {
+      this.x = params.x;
+      this.y = params.y;
+      this.fromCommand = params.fromCommand;
+      this.needOffset = false;
+      // 确保打印数据正常
+      this.width = params.width;
+      this.height = params.height;
+    } else {
+      // 防止前段创建pdf的时候，pdf会偏移
+      // 自动生成的批注 这一段需要删除掉
+      this.needOffset = true;
+    }
     this.#color =
       params.color ||
       FreeTextEditor._defaultColor ||
@@ -171,6 +184,23 @@ class FreeTextEditor extends AnnotationEditor {
     }
   }
 
+  getColor() {
+    return this.#color;
+  }
+
+  getFontSize() {
+    return this.#fontSize;
+  }
+
+  renderContent(content) {
+    this.#content = content;
+    this.#setContent(content);
+  }
+
+  getContent() {
+    return this.#content;
+  }
+
   /** @inheritdoc */
   updateParams(type, value) {
     switch (type) {
@@ -180,6 +210,16 @@ class FreeTextEditor extends AnnotationEditor {
       case AnnotationEditorParamsType.FREETEXT_COLOR:
         this.#updateColor(value);
         break;
+    }
+  }
+
+  focusout(event) {
+    const editMode = this.isInEditMode();
+    const target = event.relatedTarget;
+    const targetRight = !target?.closest(`#${this.id}`);
+    super.focusout(event);
+    if (this._focusEventsAllowed && editMode && targetRight) {
+      this._uiManager.hook.postModifyConfirm(this);
     }
   }
 
@@ -553,7 +593,7 @@ class FreeTextEditor extends AnnotationEditor {
     }
 
     let baseX, baseY;
-    if (this.width) {
+    if (this.width && this.needOffset) {
       baseX = this.x;
       baseY = this.y;
     }
@@ -566,9 +606,9 @@ class FreeTextEditor extends AnnotationEditor {
     this.editorDiv.setAttribute("data-l10n-id", "pdfjs-free-text");
     this.enableEditing();
 
-    AnnotationEditor._l10nPromise
-      .get("pdfjs-free-text-default-content")
-      .then(msg => this.editorDiv?.setAttribute("default-content", msg));
+    // AnnotationEditor._l10nPromise
+    //   .get("pdfjs-free-text-default-content")
+    //   .then(msg => this.editorDiv?.setAttribute("default-content", msg));
     this.editorDiv.contentEditable = true;
 
     const { style } = this.editorDiv;
@@ -583,7 +623,7 @@ class FreeTextEditor extends AnnotationEditor {
 
     bindEvents(this, this.div, ["dblclick", "keydown"]);
 
-    if (this.width) {
+    if (this.width && this.needOffset) {
       // This editor was created in using copy (ctrl+c).
       const [parentWidth, parentHeight] = this.parentDimensions;
       if (this.annotationElementId) {

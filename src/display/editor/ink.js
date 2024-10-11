@@ -19,9 +19,9 @@ import {
   assert,
   Util,
 } from "../../shared/util.js";
-import { AnnotationEditor } from "./editor.js";
 import { InkAnnotationElement } from "../annotation_layer.js";
 import { noContextMenu } from "../display_utils.js";
+import { AnnotationEditor } from "./editor.js";
 import { opacityToHex } from "./tools.js";
 
 /**
@@ -356,6 +356,9 @@ class InkEditor extends AnnotationEditor {
    * @param {number} y
    */
   #startDrawing(x, y) {
+    if (!this.drawingIsBegin) {
+      this.drawingIsBegin = true;
+    }
     this.canvas.addEventListener("contextmenu", noContextMenu, {
       signal: this._uiManager._signal,
     });
@@ -713,6 +716,10 @@ class InkEditor extends AnnotationEditor {
   canvasPointerup(event) {
     event.preventDefault();
     this.#endDrawing(event);
+    this.focusout(event);
+    if (this.drawingIsBegin) {
+      this._uiManager.hook.postInitialize(this);
+    }
   }
 
   /**
@@ -721,6 +728,11 @@ class InkEditor extends AnnotationEditor {
    */
   canvasPointerleave(event) {
     this.#endDrawing(event);
+
+    this.focusout(event);
+    if (this.drawingIsBegin) {
+      this._uiManager.hook.postInitialize(this);
+    }
   }
 
   /**
@@ -970,6 +982,10 @@ class InkEditor extends AnnotationEditor {
     return points;
   }
 
+  static doFromPDFCoordinates(points, rect, rotation) {
+    return this.#fromPDFCoordinates(points, rect, rotation);
+  }
+
   static #fromPDFCoordinates(points, rect, rotation) {
     const [blX, blY, trX, trY] = rect;
 
@@ -1203,6 +1219,30 @@ class InkEditor extends AnnotationEditor {
     editor.#setScaleFactor(width, height);
 
     return editor;
+  }
+
+  fixFromBbox(width, height) {
+    const bbox = this.#getBbox();
+    this.#baseWidth = Math.max(AnnotationEditor.MIN_SIZE, bbox[2] - bbox[0]);
+    this.#baseHeight = Math.max(AnnotationEditor.MIN_SIZE, bbox[3] - bbox[1]);
+    this.#setScaleFactor(width, height);
+  }
+
+  static doBuildPath2D(path) {
+    return this.#buildPath2D(path);
+  }
+
+  setRealWidthHeight(width, height) {
+    this.#disableEditing = true;
+    this.#realWidth = Math.round(width);
+    this.#realHeight = Math.round(height);
+  }
+
+  setBaseWidthHeight(width, height) {
+    const bbox = this.#getBbox();
+    this.#baseWidth = Math.max(AnnotationEditor.MIN_SIZE, bbox[2] - bbox[0]);
+    this.#baseHeight = Math.max(AnnotationEditor.MIN_SIZE, bbox[3] - bbox[1]);
+    this.#setScaleFactor(width, height);
   }
 
   /** @inheritdoc */

@@ -15,9 +15,9 @@
 
 import { AppOptions } from "./app_options.js";
 import { BaseExternalServices } from "./external_services.js";
-import { BasePreferences } from "./preferences.js";
-import { GenericL10n } from "./genericl10n.js";
 import { GenericScripting } from "./generic_scripting.js";
+import { GenericL10n } from "./genericl10n.js";
+import { BasePreferences } from "./preferences.js";
 
 if (typeof PDFJSDev !== "undefined" && !PDFJSDev.test("GENERIC")) {
   throw new Error(
@@ -38,8 +38,15 @@ class Preferences extends BasePreferences {
 }
 
 class ExternalServices extends BaseExternalServices {
+  getLang() {
+    const htmlLang = document.querySelector("html")?.getAttribute("lang");
+
+    return htmlLang ?? window.navigator.language;
+  }
+
   async createL10n() {
-    return new GenericL10n(AppOptions.get("localeProperties")?.lang);
+    /** 多语言优先获取html中lang的配置，否则取浏览器语言 */
+    return new GenericL10n(this.getLang());
   }
 
   createScripting() {

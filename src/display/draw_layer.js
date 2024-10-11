@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-import { DOMSVGFactory } from "./display_utils.js";
 import { shadow } from "../shared/util.js";
+import { DOMSVGFactory } from "./display_utils.js";
 
 /**
  * Manage the SVGs drawn on top of the page canvas.
@@ -178,14 +178,18 @@ class DrawLayer {
     const path = this.#toUpdate.get(id);
     this.#toUpdate.delete(id);
     this.updateBox(id, line.box);
-    path.setAttribute("d", line.toSVGPath());
+    if (path) {
+      path.setAttribute("d", line.toSVGPath());
+    }
   }
 
   updateLine(id, line) {
     const root = this.#mapping.get(id);
     const defs = root.firstChild;
     const path = defs.firstChild;
-    path.setAttribute("d", line.toSVGPath());
+    if (path) {
+      path.setAttribute("d", line.toSVGPath());
+    }
   }
 
   removeFreeHighlight(id) {

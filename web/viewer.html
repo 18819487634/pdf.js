@@ -51,6 +51,67 @@ See https://github.com/adobe-type-tools/cmap-resources
 <!--#elif /* Development mode. */-->
     <link rel="resource" type="application/l10n" href="locale/locale.json">
 
+    <script type="text/javascript">
+      window.handleAnnotation = (type, data) => {
+
+      }
+
+      window.loadData = async () => {
+        const data = await (await fetch('./compressed.tracemonkey-pldi-09.pdf')).arrayBuffer();
+        return data;
+      };
+      window.afterDocumentLoaded = function () {
+
+      }
+       window.initAnnotation = () => {
+        return [
+          // 高亮
+          {
+            "pageIndex": 0,
+            "id": "pdfjs_internal_editor_4",
+            "name": "highlightEditor",
+            color:"#FFFF98",
+            "boxes": [
+              {
+                "height": 0.017199999999999993,
+                "width": 0.13540000000000002,
+                "x": 0.27709999999999996,
+                "y": 0.4397
+              }
+            ],
+            "opacity": 1
+          },
+          
+          // 文字
+          {
+            color: "#000000",
+            content: "ffffffdsafdsa",
+            fontSize: 30,
+            id: "pdfjs_internal_editor_8",
+            isCentered: undefined,
+            name: "freeTextEditor",
+            pageIndex: 0,
+            x: 0.7388888888888892,
+            y: 0.281060606060606,
+            height: 0.05920928030303031,
+            width: 0.3426776960784314
+          },
+          // 绘制线，todo，paths未知
+          {
+            "pageIndex":0,
+            "id":"pdfjs_internal_editor_7",
+            "name":"inkEditor",
+            "color":[255,0,0],
+            "thickness":1,
+            "opacity":1,
+            "paths": [{"bezier":[482.61875000000003,522.71875,482.61875000000003,522.3187499999999,482.61875000000003,522.01875,482.61875000000003,521.8187499999999,482.61875000000003,521.61875,482.71875,521.51875,482.91875000000005,521.51875,483.1187500000001,521.51875,483.31875,521.51875,483.51875000000007,521.51875,483.71875000000006,521.51875,483.91875000000005,521.51875,484.11875000000003,521.51875,484.3187500000001,521.51875,484.51875,521.51875,484.71875000000006,521.51875,484.91875000000005,521.51875,485.11875000000003,521.51875,485.31875,521.51875,485.51875000000007,521.51875,485.71875,521.51875,485.91875000000005,521.51875,486.1187500000001,521.51875,486.31875,521.51875,486.51875000000007,521.51875,486.71875000000006,521.51875,486.91875000000005,521.51875,487.11875000000003,521.51875,487.3187500000001,521.51875,487.6187500000001,521.51875,488.01875000000007,521.51875],"points":[482.61875000000003,522.71875,482.61875000000003,522.3187499999999,482.61875000000003,521.61875,483.1187500000001,521.51875,483.71875000000006,521.51875,484.3187500000001,521.51875,484.91875000000005,521.51875,485.51875000000007,521.51875,486.1187500000001,521.51875,486.71875000000006,521.51875,487.3187500000001,521.51875,488.01875000000007,521.51875]}],
+            "rect":[482.11875000000003, 512.41875, 492.91875000000005, 523.21875],
+            "rotation":0
+          },
+        ]
+      }
+    </script>
+
     <script type="importmap">
       {
         "imports": {
@@ -95,7 +156,9 @@ See https://github.com/adobe-type-tools/cmap-resources
 
   <body tabindex="0">
     <div id="outerContainer">
-
+      <div class="loading-main">
+        <img src="./images/loading-icon.gif" alt="">
+      </div>
       <div id="sidebarContainer">
         <div id="toolbarSidebar" class="toolbarHorizontalGroup">
           <div id="toolbarSidebarLeft">
@@ -303,7 +366,7 @@ See https://github.com/adobe-type-tools/cmap-resources
                       </div>
                     </div>
                   </div>
-                  <div id="editorStamp" class="toolbarButtonWithContainer">
+                  <!-- <div id="editorStamp" class="toolbarButtonWithContainer">
                     <button id="editorStampButton" class="toolbarButton" type="button" disabled="disabled" title="Add or edit images" role="radio" aria-expanded="false" aria-haspopup="true" aria-controls="editorStampParamsToolbar" tabindex="0" data-l10n-id="pdfjs-editor-stamp-button">
                       <span data-l10n-id="pdfjs-editor-stamp-button-label">Add or edit images</span>
                     </button>
@@ -314,7 +377,7 @@ See https://github.com/adobe-type-tools/cmap-resources
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </div> -->
                 </div>
 
                 <div id="editorModeSeparator" class="verticalToolbarSeparator"></div>

@@ -73,6 +73,10 @@ class IdManager {
   get id() {
     return `${AnnotationEditorPrefix}${this.#id++}`;
   }
+
+  setId(id) {
+    this.#id = id;
+  }
 }
 
 /**
@@ -664,6 +668,8 @@ class AnnotationEditorUIManager {
 
   #viewer = null;
 
+  hook = new AnnotationEditorHook();
+
   #updateModeCapability = null;
 
   static TRANSLATE_SMALL = 1; // page units.
@@ -1118,11 +1124,7 @@ class AnnotationEditorUIManager {
    * @param {AnnotationEditor} editor
    */
   addToAnnotationStorage(editor) {
-    if (
-      !editor.isEmpty() &&
-      this.#annotationStorage &&
-      !this.#annotationStorage.has(editor.id)
-    ) {
+    if (this.#annotationStorage && !this.#annotationStorage.has(editor.id)) {
       this.#annotationStorage.setValue(editor.id, editor);
     }
   }
@@ -1580,6 +1582,11 @@ class AnnotationEditorUIManager {
     return this.#idManager.id;
   }
 
+  // 设置id起始值
+  setId(id) {
+    this.#idManager.setId(id);
+  }
+
   get currentLayer() {
     return this.#allLayers.get(this.#currentPageIndex);
   }
@@ -1749,6 +1756,14 @@ class AnnotationEditorUIManager {
     }
   }
 
+  confirmSelectedEditor(type) {
+    for (const editor of this.#selectedEditors) {
+      if (type === editor.name) {
+        this.hook.postModifyConfirm(editor);
+      }
+    }
+  }
+
   enableWaiting(mustWait = false) {
     if (this.#isWaiting === mustWait) {
       return;
@@ -1896,6 +1911,11 @@ class AnnotationEditorUIManager {
       this.addEditor(editor);
       this.addToAnnotationStorage(editor);
     }
+  }
+
+  // 暴露给外部
+  doAddEditorToLayer(editor) {
+    this.#addEditorToLayer(editor);
   }
 
   /**
@@ -2452,11 +2472,55 @@ class AnnotationEditorUIManager {
   }
 }
 
+class AnnotationEditorHook {
+  // new完对象后调的，不是所有的组件都有
+  postConstruct = e => {};
+
+  // 在对editor经过一轮调整之后做的，
+  // 只有那种绘制完了还会继续调整的批注才有
+  postModifyConfirm = e => {};
+
+  // 删除一个对象之后调用的
+  postDestroy = e => {};
+
+  // 初始化之后调用的，不是所有的都有，目前只有boxCheckEditor有
+  postInitialize = e => {};
+}
+
+/** 获取左上角的坐标，相对于body根元素而言 */
+function getLeftTopCoord(dom) {
+  if (!dom) {
+    return null;
+  }
+  let actualTop = 0,
+    actualLeft = 0;
+  let current = dom;
+  while (current !== null) {
+    actualTop += current.offsetTop;
+    actualLeft += current.offsetLeft;
+    const style = window.getComputedStyle(current);
+    actualTop += parseFloat(style.marginTop.replace("px", ""));
+    actualTop += parseFloat(style.paddingTop.replace("px", ""));
+    actualTop += parseFloat(style.borderTopWidth.replace("px", ""));
+
+    actualLeft += parseFloat(style.marginLeft.replace("px", ""));
+    actualLeft += parseFloat(style.paddingLeft.replace("px", ""));
+    actualLeft += parseFloat(style.borderLeftWidth.replace("px", ""));
+
+    current = current.offsetParent;
+  }
+  return {
+    x: actualLeft,
+    y: actualTop,
+  };
+}
+
 export {
   AnnotationEditorUIManager,
   bindEvents,
   ColorManager,
   CommandManager,
+  getLeftTopCoord,
   KeyboardManager,
   opacityToHex,
 };

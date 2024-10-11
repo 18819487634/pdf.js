@@ -26,11 +26,11 @@
 /** @typedef {import("../src/display/struct_tree_layer_builder.js").StructTreeLayerBuilder} StructTreeLayerBuilder */
 
 import { AnnotationEditorType, FeatureTest } from "../../shared/util.js";
+import { setLayerDimensions } from "../display_utils.js";
 import { AnnotationEditor } from "./editor.js";
 import { FreeTextEditor } from "./freetext.js";
 import { HighlightEditor } from "./highlight.js";
 import { InkEditor } from "./ink.js";
-import { setLayerDimensions } from "../display_utils.js";
 import { StampEditor } from "./stamp.js";
 
 /**
@@ -370,17 +370,24 @@ class AnnotationEditorLayer {
 
   enableTextSelection() {
     this.div.tabIndex = -1;
-    if (this.#textLayer?.div && !this.#textSelectionAC) {
-      this.#textSelectionAC = new AbortController();
-      const signal = this.#uiManager.combinedSignal(this.#textSelectionAC);
+    this.#textLayer.div.classList.add("highlighting");
+    /**
+     * @TODO 高亮文字可用，高亮块不可用
+     * @author 钟鹏飞
+     * @reason
+     * @time 2024/10/11
+     */
+    // if (this.#textLayer?.div && !this.#textSelectionAC) {
+    //   this.#textSelectionAC = new AbortController();
+    //   const signal = this.#uiManager.combinedSignal(this.#textSelectionAC);
 
-      this.#textLayer.div.addEventListener(
-        "pointerdown",
-        this.#textLayerPointerDown.bind(this),
-        { signal }
-      );
-      this.#textLayer.div.classList.add("highlighting");
-    }
+    //   this.#textLayer.div.addEventListener(
+    //     "pointerdown",
+    //     this.#textLayerPointerDown.bind(this),
+    //     { signal }
+    //   );
+    //   this.#textLayer.div.classList.add("highlighting");
+    // }
   }
 
   disableTextSelection() {
@@ -536,6 +543,14 @@ class AnnotationEditorLayer {
     editor.onceAdded();
     this.#uiManager.addToAnnotationStorage(editor);
     editor._reportTelemetry(editor.telemetryInitialData);
+    this.show();
+  }
+
+  show() {
+    if (!this.div || this.isEmpty) {
+      return;
+    }
+    this.div.hidden = false;
   }
 
   moveEditorInDOM(editor) {
@@ -625,6 +640,12 @@ class AnnotationEditorLayer {
    */
   #createNewEditor(params) {
     const editorType = this.#currentEditorType;
+    const retVal = editorType
+      ? new editorType.prototype.constructor(params)
+      : null;
+    if (retVal) {
+      this.#uiManager.hook.postConstruct(retVal);
+    }
     return editorType ? new editorType.prototype.constructor(params) : null;
   }
 
@@ -732,6 +753,14 @@ class AnnotationEditorLayer {
    */
   toggleSelected(editor) {
     this.#uiManager.toggleSelected(editor);
+  }
+
+  /**
+   * Check if the editor is selected.
+   * @param {AnnotationEditor} editor
+   */
+  isSelected(editor) {
+    return this.#uiManager.isSelected(editor);
   }
 
   /**

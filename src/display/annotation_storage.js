@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { objectFromMap, shadow, unreachable } from "../shared/util.js";
 import { AnnotationEditor } from "./editor/editor.js";
-import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 
 const SerializableEmpty = Object.freeze({
   map: null,
@@ -188,10 +188,10 @@ class AnnotationStorage {
     let hasBitmap = false;
 
     for (const [key, val] of this.#storage) {
-      const serialized =
-        val instanceof AnnotationEditor
-          ? val.serialize(/* isForCopying = */ false, context)
-          : val;
+      const serialized = val?.serialize
+        ? val.serialize(/* isForCopying = */ false, context)
+        : val;
+
       if (serialized) {
         map.set(key, serialized);
 
@@ -292,6 +292,8 @@ class PrintAnnotationStorage extends AnnotationStorage {
     super();
     const { map, hash, transfer } = parent.serializable;
     // Create a *copy* of the data, since Objects are passed by reference in JS.
+
+    console.log(map);
     const clone = structuredClone(map, transfer ? { transfer } : null);
 
     this.#serializable = { map: clone, hash, transfer };

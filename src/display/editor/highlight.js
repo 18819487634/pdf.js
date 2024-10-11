@@ -19,15 +19,14 @@ import {
   shadow,
   Util,
 } from "../../shared/util.js";
-import { bindEvents, KeyboardManager } from "./tools.js";
-import { FreeOutliner, Outliner } from "./outliner.js";
 import {
   HighlightAnnotationElement,
   InkAnnotationElement,
 } from "../annotation_layer.js";
-import { AnnotationEditor } from "./editor.js";
-import { ColorPicker } from "./color_picker.js";
 import { noContextMenu } from "../display_utils.js";
+import { AnnotationEditor } from "./editor.js";
+import { FreeOutliner, Outliner } from "./outliner.js";
+import { bindEvents, KeyboardManager } from "./tools.js";
 
 /**
  * Basic draw editor in order to generate an Highlight annotation.
@@ -273,6 +272,10 @@ class HighlightEditor extends AnnotationEditor {
     return this.#lastPoint;
   }
 
+  getBoxes() {
+    return this.#boxes;
+  }
+
   /** @inheritdoc */
   updateParams(type, value) {
     switch (type) {
@@ -381,10 +384,10 @@ class HighlightEditor extends AnnotationEditor {
     if (!toolbar) {
       return null;
     }
-    if (this._uiManager.highlightColors) {
-      this.#colorPicker = new ColorPicker({ editor: this });
-      toolbar.addColorPicker(this.#colorPicker);
-    }
+    // if (this._uiManager.highlightColors) {
+    //   this.#colorPicker = new ColorPicker({ editor: this });
+    //   toolbar.addColorPicker(this.#colorPicker);
+    // }
     return toolbar;
   }
 
@@ -596,15 +599,11 @@ class HighlightEditor extends AnnotationEditor {
   }
 
   pointerover() {
-    if (!this.isSelected) {
-      this.parent.drawLayer.addClass(this.#outlineId, "hovered");
-    }
+    this.parent.drawLayer.addClass(this.#outlineId, "hovered");
   }
 
   pointerleave() {
-    if (!this.isSelected) {
-      this.parent.drawLayer.removeClass(this.#outlineId, "hovered");
-    }
+    this.parent.drawLayer.removeClass(this.#outlineId, "hovered");
   }
 
   #keydown(event) {
